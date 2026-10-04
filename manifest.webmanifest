@@ -1,0 +1,9 @@
+{
+  "name": "ChefNearby - Book a Chef in Bengaluru",
+  "short_name": "ChefNearby",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fffaf4",
+  "theme_color": "#e34b25",
+  "description": "Book private chefs, party chefs and home cooks in Bengaluru."
+}
