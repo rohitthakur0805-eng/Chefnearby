@@ -61,8 +61,7 @@ function renderServices(){
 }
 function renderMarkets(){
  const cities=$('cityCards'),countries=$('countryCards');
- if(cities)cities.innerHTML=INDIA_CITIES.map((c,i)=>'<button class="service" type="button" data-city="'+esc(c)+'" style="text-align:left;cursor:pointer;color:var(--ink)"><div class="icon">📍</div><h3>'+esc(c)+'</h3><p>'+(i===0?'Primary city':'India expansion city')+'</p><div class="price">Request service →</div></button>').join('');
- cities?.querySelectorAll('[data-city]').forEach(btn=>btn.addEventListener('click',()=>{if($('loc'))$('loc').value=btn.dataset.city;if($('bookingCity'))$('bookingCity').value=btn.dataset.city;$('book')?.scrollIntoView({behavior:'smooth'});}));
+ if(cities)cities.innerHTML=INDIA_CITIES.map((c,i)=>'<a class="service" href="./cities/'+esc(slugify(c))+(slugify(c)==='bengaluru'?'.html':'.html')+'" style="display:block;color:var(--ink)"><div class="icon">📍</div><h3>'+esc(c)+'</h3><p>'+(i===0?'Primary launch market':'Request / expansion city')+'</p><div class="price">Open city page →</div></a>').join('');
  if(countries) countries.innerHTML=COUNTRIES.map(c=>'<article class="service"><div class="icon">'+c[1]+'</div><h3>'+esc(c[0])+'</h3><p>International expansion market</p><div class="price">Launch planning</div></article>').join('');
 }
 async function init(){
