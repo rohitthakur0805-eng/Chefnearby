@@ -69,6 +69,8 @@ async function submitBooking(){
 }
 function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),3500)}
 </script>
-<script src="./config.js"></script>\n<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>\n<script src="./supabase.js"></script><script src="./catalog.js"></script>
+<script src="./config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./supabase.js"></script><script src="./catalog.js"></script>
 <script>document.addEventListener("DOMContentLoaded",()=>{const n=(window.CHEFNEARME&&window.CHEFNEARME.whatsapp)||"";const a=document.getElementById("waLink");if(n){a.href="https://wa.me/"+n+"?text="+encodeURIComponent("Hi ChefNearby, I want to book a chef in Bengaluru.");}else{a.href="#book";a.onclick=()=>document.getElementById("book").scrollIntoView({behavior:"smooth"});}});</script>
 </body></html>
