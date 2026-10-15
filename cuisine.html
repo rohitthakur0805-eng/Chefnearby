@@ -26,7 +26,7 @@ async function init(){
  const [cr,dr,mr,mdr]=await Promise.all(['cuisines','dishes','menus','menu_dishes'].map(t=>read(db,t)));
  const cuisines=cr.rows.filter(active), dishes=dr.rows.filter(active), menus=mr.rows.filter(active), links=mdr.rows;
  const cuisine=cuisines.find(c=>String(c.id||'')===wantedId)||cuisines.find(c=>slug(val(c,['slug'])||label(c))===wantedSlug)||cuisines.find(c=>slug(label(c))===wantedSlug);
- if(!cuisine){$('title').textContent='Cuisine not found';$('intro').textContent='This cuisine could not be matched to a live database record.';$('status').textContent='Check the cuisine slug and the Supabase cuisines table.';return}
+ const canon=document.querySelector('link[rel=canonical]');if(canon)canon.href='https://chefnearby.in/cuisine.html?slug='+encodeURIComponent(val(cuisine||{},['slug'])||wantedSlug);if(!cuisine){$('title').textContent='Cuisine not found';$('intro').textContent='This cuisine could not be matched to a live database record.';$('status').textContent='Check the cuisine slug and the Supabase cuisines table.';return}
  $('title').textContent=label(cuisine);document.title=label(cuisine)+' Dishes & Menus | ChefNearby';
  $('intro').textContent='Explore '+label(cuisine)+' dishes and available menus. Select a menu or request a chef for your occasion.';
  $('bookLink').href='./index.html?cuisine='+encodeURIComponent(val(cuisine,['slug'])||slug(label(cuisine)))+'#book';
