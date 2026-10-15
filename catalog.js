@@ -13,10 +13,10 @@
   ];
   const FALLBACK_SERVICES = [
     ['Party Chef','Events','🎉'],['Private Chef','Food','🍽️'],['Private Dining','Food','🥂'],
-    ['Home Cook','Home','🏠'],['Daily Cook','Home','🥗'],['Bartender','Events','🍸'],
-    ['Waiter','Events','🧑‍🍳'],['Babysitter','Home','🧸'],['Beautician','Personal Care','💄'],
-    ['Butler','Home','🛎️'],['Cleaner','Home','🧹'],['Decorator','Events','🎈'],
-    ['Kitchen Helper','Food','👩‍🍳']
+    ['Home Cook','Home','🏠'],['Daily Cook','Home','🥗'],['Nearby Bartender','Events','🍸'],
+    ['Nearby Waiter','Events','🧑‍🍳'],['Nearby Babysitter','Home','🧸'],['Nearby Beautician','Personal Care','💄'],
+    ['Nearby Butler','Home','🛎️'],['Nearby Cleaner','Home','🧹'],['Nearby Decorator','Events','🎈'],
+    ['Nearby Kitchen Helper','Food','👩‍🍳']
   ];
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const val = (r, keys) => { for (const k of keys) if (r && r[k] !== undefined && r[k] !== null && String(r[k]).trim()!=='') return r[k]; return ''; };
@@ -104,6 +104,7 @@
     const icons={bartender:'🍸',waiter:'🧑‍🍳',babysitter:'🧸',beautician:'💄',butler:'🛎️',cleaner:'🧹',decorator:'🎈','kitchen-helper':'👩‍🍳','party-chef':'🎉','private-chef':'🍽️','private-dining':'🥂','home-cook':'🏠','daily-cook':'🥗'};
     target.innerHTML=rows.map(s=>{
       const name=s.name||'Service', icon=s.icon||icons[slugify(name)]||'✨';
+      const displayName=(String(s.slug||'').startsWith('nearby-')&&!/^nearby\s/i.test(name))?'Nearby '+name:name;
       return '<button type="button" class="service" data-service="'+esc(name)+'" style="text-align:left;width:100%;cursor:pointer;color:var(--ink)"><div class="icon">'+icon+'</div><h3>'+esc(name.replace(/^Nearby\s+/i,''))+'</h3><p>'+esc(s.group||'Home & lifestyle service')+'</p><div class="price">Request this service →</div></button>';
     }).join('');
     target.querySelectorAll('[data-service]').forEach(btn=>btn.addEventListener('click',()=>{
