@@ -137,7 +137,13 @@
     dishes=d.rows; menus=m.rows; menuDishes=md.rows;
     services=s.rows.filter(isActive); categories=sc.rows.filter(isActive);
     if(!services.length && categories.length) services=categories;
-    renderCuisineOptions(); renderCuisineCards(); renderCatalogue(); renderServices(); renderMarkets();
+    renderCuisineOptions();
+    const requestedCuisine=new URLSearchParams(location.search).get('cuisine');
+    if(requestedCuisine){
+      const chosen=cuisines.find(x=>slugify(val(x,['slug'])||label(x))===requestedCuisine.toLowerCase()||label(x).toLowerCase()===requestedCuisine.toLowerCase());
+      if(chosen){if($('catalogCuisine'))$('catalogCuisine').value=String(chosen.id||chosen.slug||label(chosen));if($('cuisine'))$('cuisine').value=label(chosen);}
+    }
+    renderCuisineCards(); renderCatalogue(); renderServices(); renderMarkets();
     $('catalogCuisine')?.addEventListener('change',()=>{const c=selectedCuisine();if(c&&$('cuisine'))$('cuisine').value=label(c);renderCatalogue();});
     $('dishSearch')?.addEventListener('input',renderCatalogue);
     $('cuisine')?.addEventListener('change',()=>{const c=cuisines.find(x=>label(x).toLowerCase()===$('cuisine').value.toLowerCase());if(c&&$('catalogCuisine')){$('catalogCuisine').value=String(c.id||c.slug||label(c));renderCatalogue();}});
