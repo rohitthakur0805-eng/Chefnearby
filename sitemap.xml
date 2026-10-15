@@ -1,6 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-<url><loc>https://chefnearby.in/</loc></url>
-<url><loc>https://chefnearby.in/privacy.html</loc></url>
-<url><loc>https://chefnearby.in/terms.html</loc></url>
+  <url><loc>https://chefnearby.in/</loc></url>
+  <url><loc>https://chefnearby.in/about.html</loc></url>
+  <url><loc>https://chefnearby.in/terms.html</loc></url>
+  <url><loc>https://chefnearby.in/privacy.html</loc></url>
+  <url><loc>https://chefnearby.in/disclaimer.html</loc></url>
+  <url><loc>https://chefnearby.in/cuisine.html</loc></url>
+  <url><loc>https://chefnearby.in/dish.html</loc></url>
+  <url><loc>https://chefnearby.in/menu.html</loc></url>
+  <url><loc>https://chefnearby.in/blog/index.html</loc></url>
+  <url><loc>https://chefnearby.in/services/party-chef-bengaluru.html</loc></url>
+  <url><loc>https://chefnearby.in/services/private-chef-bengaluru.html</loc></url>
+  <url><loc>https://chefnearby.in/services/private-dining-bengaluru.html</loc></url>
+  <url><loc>https://chefnearby.in/services/home-cook-bengaluru.html</loc></url>
+  <url><loc>https://chefnearby.in/services/daily-cook-bengaluru.html</loc></url>
+  <url><loc>https://chefnearby.in/services/bartender-bengaluru.html</loc></url>
+  <url><loc>https://chefnearby.in/services/waiter-bengaluru.html</loc></url>
+  <url><loc>https://chefnearby.in/services/babysitter-bengaluru.html</loc></url>
+  <url><loc>https://chefnearby.in/services/beautician-bengaluru.html</loc></url>
+  <url><loc>https://chefnearby.in/services/butler-bengaluru.html</loc></url>
+  <url><loc>https://chefnearby.in/services/cleaner-bengaluru.html</loc></url>
+  <url><loc>https://chefnearby.in/services/decorator-bengaluru.html</loc></url>
+  <url><loc>https://chefnearby.in/services/kitchen-helper-bengaluru.html</loc></url>
+  <url><loc>https://chefnearby.in/cities/bengaluru.html</loc></url>
+  <url><loc>https://chefnearby.in/cities/delhi.html</loc></url>
+  <url><loc>https://chefnearby.in/cities/pune.html</loc></url>
+  <url><loc>https://chefnearby.in/cities/noida.html</loc></url>
+  <url><loc>https://chefnearby.in/cities/gurgaon.html</loc></url>
+  <url><loc>https://chefnearby.in/cities/hyderabad.html</loc></url>
+  <url><loc>https://chefnearby.in/cities/mumbai.html</loc></url>
+  <url><loc>https://chefnearby.in/cities/lucknow.html</loc></url>
+  <url><loc>https://chefnearby.in/blog/north-indian-paneer-butter-masala.html</loc></url>
+  <url><loc>https://chefnearby.in/blog/vegetable-biryani.html</loc></url>
+  <url><loc>https://chefnearby.in/blog/italian-tomato-basil-pasta.html</loc></url>
+  <url><loc>https://chefnearby.in/blog/chicken-tikka.html</loc></url>
 </urlset>
