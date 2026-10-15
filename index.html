@@ -36,7 +36,7 @@
 <a class="wa" id="waLink" href="#" target="_blank">💬 WhatsApp</a><div class="toast" id="toast"></div>
 <script>
 function pick(v){document.getElementById('service').value=v;document.getElementById('bservice').value=v}
-function goBook(){document.getElementById('bservice').value=document.getElementById('service').value;document.getElementById('bguests').value=document.getElementById('guests').value;document.getElementById('book').scrollIntoView({behavior:'smooth'})}
+function goBook(){document.getElementById('bservice').value=document.getElementById('service').value;document.getElementById('bguests').value=document.getElementById('guests').value;if(document.getElementById('bookingCity'))document.getElementById('bookingCity').value=document.getElementById('loc').value;document.getElementById('book').scrollIntoView({behavior:'smooth'})}
 async function submitBooking(){
   const button=document.querySelector('.submit');
   if(button){button.disabled=true;button.textContent='Saving booking request…'}
