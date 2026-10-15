@@ -1,144 +1,150 @@
-/* Live cuisine, dish and menu catalogue for ChefNearby. */
+/* ChefNearby marketplace catalogue: cuisines, dishes, menus, services and markets. */
 (function () {
   'use strict';
   const config = window.CHEFNEARME || {};
-  let client;
-  let cuisines = [], dishes = [], menus = [], menuDishes = [];
+  let client, cuisines=[], dishes=[], menus=[], menuDishes=[], services=[], categories=[];
   const $ = id => document.getElementById(id);
-  const first = (obj, keys) => {
-    for (const key of keys) if (obj && obj[key] !== undefined && obj[key] !== null && String(obj[key]).trim() !== '') return obj[key];
-    return '';
-  };
-  const text = (value, fallback) => String(value || fallback || '');
-  function active(row) {
-    return !(row && (row.is_active === false || row.active === false || row.status === 'inactive'));
-  }
-  function title(row) {
-    return text(first(row, ['name','dish_name','title','display_name','label','slug']), 'Untitled item');
-  }
-  function escapeHtml(value) {
-    return String(value || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  }
-  function rowCuisineId(row) {
-    return first(row, ['cuisine_id','cuisineId','cuisine_uuid']);
+  const INDIA_CITIES = ['Bengaluru','Delhi','Pune','Noida','Gurgaon','Hyderabad','Mumbai','Lucknow'];
+  const COUNTRIES = [
+    ['United States','🇺🇸'],['United Kingdom','🇬🇧'],['Canada','🇨🇦'],['Australia','🇦🇺'],
+    ['New Zealand','🇳🇿'],['United Arab Emirates','🇦🇪'],['Saudi Arabia','🇸🇦'],['Qatar','🇶🇦'],
+    ['Singapore','🇸🇬'],['Malaysia','🇲🇾'],['Germany','🇩🇪'],['France','🇫🇷'],
+    ['Italy','🇮🇹'],['Netherlands','🇳🇱'],['Ireland','🇮🇪']
+  ];
+  const FALLBACK_SERVICES = [
+    ['Party Chef','Events','🎉'],['Private Chef','Food','🍽️'],['Private Dining','Food','🥂'],
+    ['Home Cook','Home','🏠'],['Daily Cook','Home','🥗'],['Bartender','Events','🍸'],
+    ['Waiter','Events','🧑‍🍳'],['Babysitter','Home','🧸'],['Beautician','Personal Care','💄'],
+    ['Butler','Home','🛎️'],['Cleaner','Home','🧹'],['Decorator','Events','🎈'],
+    ['Kitchen Helper','Food','👩‍🍳']
+  ];
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const val = (r, keys) => { for (const k of keys) if (r && r[k] !== undefined && r[k] !== null && String(r[k]).trim()!=='') return r[k]; return ''; };
+  const label = r => String(val(r,['name','dish_name','title','display_name','label','slug']) || 'Untitled');
+  const isActive = r => !(r && (r.is_active === false || r.active === false || String(r.status||'').toLowerCase()==='inactive'));
+  const slugify = s => String(s||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  async function read(table) {
+    const {data,error}=await client.from(table).select('*').limit(1000);
+    if(error){ console.warn('[ChefNearby] Could not read '+table+': '+error.message); return {rows:[],error:error.message}; }
+    return {rows:Array.isArray(data)?data:[],error:null};
   }
   function selectedCuisine() {
-    const id = $('catalogCuisine') && $('catalogCuisine').value;
-    return cuisines.find(c => String(c.id) === String(id)) || cuisines.find(c => String(first(c,['slug'])) === String(id)) || null;
+    const id=$('catalogCuisine')?.value;
+    return cuisines.find(c=>String(c.id||c.slug||label(c))===String(id)) || cuisines.find(c=>slugify(label(c))===String(id)) || null;
+  }
+  function dishBelongsToCuisine(d,c) {
+    if(!c) return true;
+    const directId=val(d,['cuisine_id','cuisineId','cuisine_uuid']);
+    if(directId!=='') return String(directId)===String(c.id);
+    const directName=val(d,['cuisine_slug','cuisine_name','cuisine']);
+    if(directName!=='') return [label(c),val(c,['slug'])].some(x=>String(x||'').toLowerCase()===String(directName).toLowerCase());
+    const cuisineMenus=menus.filter(m=>{
+      const mid=val(m,['cuisine_id','cuisineId']);
+      const mname=val(m,['cuisine_slug','cuisine_name','cuisine']);
+      return (mid!=='' && String(mid)===String(c.id)) || (mname!=='' && [label(c),val(c,['slug'])].some(x=>String(x||'').toLowerCase()===String(mname).toLowerCase()));
+    }).map(m=>String(m.id));
+    if(cuisineMenus.length) return menuDishes.some(md=>cuisineMenus.includes(String(val(md,['menu_id','menuId']))) && String(val(md,['dish_id','dishId']))===String(d.id));
+    // If this dataset has no cuisine relation at all, don't pretend every dish belongs to every cuisine.
+    return false;
   }
   function renderCuisineOptions() {
-    const catalog = $('catalogCuisine'), booking = $('cuisine');
-    if (!catalog || !booking) return;
-    const previous = catalog.value;
-    catalog.innerHTML = '';
-    const placeholder = document.createElement('option');
-    placeholder.value = '';
-    placeholder.textContent = cuisines.length ? 'Choose a cuisine' : 'No cuisines available';
-    catalog.appendChild(placeholder);
-    cuisines.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = String(c.id || c.slug || title(c));
-      opt.textContent = title(c);
-      catalog.appendChild(opt);
-    });
-    if (previous && Array.from(catalog.options).some(o => o.value === previous)) catalog.value = previous;
-    if (!catalog.value && cuisines.length) catalog.selectedIndex = 1;
-    const chosen = catalog.value;
-    booking.innerHTML = '';
-    cuisines.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = title(c);
-      opt.textContent = title(c);
-      booking.appendChild(opt);
-    });
-    const current = selectedCuisine();
-    if (current) booking.value = title(current);
-    else if (chosen) {
-      const c = cuisines.find(x => String(x.id || x.slug || title(x)) === chosen);
-      if (c) booking.value = title(c);
+    const catalog=$('catalogCuisine'), booking=$('cuisine');
+    if(catalog){
+      const old=catalog.value;
+      catalog.innerHTML='<option value="">Choose a cuisine</option>'+cuisines.map(c=>'<option value="'+esc(c.id||c.slug||label(c))+'">'+esc(label(c))+'</option>').join('');
+      if(old && cuisines.some(c=>String(c.id||c.slug||label(c))===old)) catalog.value=old;
+      else if(cuisines.length) catalog.value=String(cuisines[0].id||cuisines[0].slug||label(cuisines[0]));
+    }
+    if(booking){
+      const old=booking.value;
+      booking.innerHTML=cuisines.map(c=>'<option value="'+esc(label(c))+'">'+esc(label(c))+'</option>').join('');
+      if(cuisines.some(c=>label(c)===old)) booking.value=old;
+      else if(catalog && selectedCuisine()) booking.value=label(selectedCuisine());
     }
   }
-  function cuisineMatches(row, cuisine) {
-    if (!cuisine) return true;
-    const id = rowCuisineId(row);
-    if (id !== '') return String(id) === String(cuisine.id);
-    const slug = first(row, ['cuisine_slug','cuisine_name','cuisine']);
-    if (slug !== '') return String(slug).toLowerCase() === String(first(cuisine,['slug','name'])).toLowerCase()
-      || String(slug).toLowerCase() === String(title(cuisine)).toLowerCase();
-    return true;
-  }
-  function render() {
-    const cuisine = selectedCuisine();
-    const search = ($('dishSearch')?.value || '').trim().toLowerCase();
-    const dishArea = $('catalogDishes'), menuArea = $('catalogMenus'), status = $('catalogStatus');
-    if (!dishArea || !menuArea || !status) return;
-    const filteredDishes = dishes.filter(d => active(d) && cuisineMatches(d, cuisine) &&
-      (!search || [title(d), first(d,['description','short_description','slug'])].join(' ').toLowerCase().includes(search)));
-    const linkedMenuIds = new Set(menuDishes.filter(md => filteredDishes.some(d => String(d.id) === String(first(md,['dish_id','dishId']))))
-      .map(md => String(first(md,['menu_id','menuId']))));
-    const filteredMenus = menus.filter(m => active(m) && (!cuisine || String(first(m,['cuisine_id','cuisineId'])) === String(cuisine.id) ||
-      String(first(m,['cuisine_slug','cuisine_name'])) === String(first(cuisine,['slug','name'])) ||
-      linkedMenuIds.has(String(m.id))));
-    menuArea.innerHTML = filteredMenus.map(m => {
-      const desc = first(m,['description','details','summary']);
-      const count = menuDishes.filter(md => String(first(md,['menu_id','menuId'])) === String(m.id)).length;
-      return '<article class="service"><div class="icon">📋</div><h3>'+escapeHtml(title(m))+'</h3><p>'+escapeHtml(desc || (count ? count+' dishes in this menu' : 'ChefNearby menu'))+'</p></article>';
+  function renderCuisineCards() {
+    const target=$('cuisineCards'); if(!target) return;
+    target.innerHTML=cuisines.map(c=>{
+      const count=dishes.filter(d=>isActive(d)&&dishBelongsToCuisine(d,c)).length;
+      const icon=({italian:'🍝',chinese:'🥡',japanese:'🍣',thai:'🍜',mexican:'🌮',continental:'🥘', 'north-indian':'🍛','south-indian':'🥞','pan-asian':'🍱',mediterranean:'🫒'})[slugify(label(c))]||'🍽️';
+      return '<button type="button" class="service cuisine-tile" data-cuisine="'+esc(c.id||c.slug||label(c))+'" style="text-align:left;width:100%;cursor:pointer;color:var(--ink)"><div class="icon">'+icon+'</div><h3>'+esc(label(c))+'</h3><p>'+count+' linked dishes</p><div class="price">Explore cuisine →</div></button>';
     }).join('');
-    dishArea.innerHTML = filteredDishes.map(d => {
-      const name = title(d), desc = first(d,['description','short_description','details']);
-      const image = first(d,['image_url','image','photo_url','image_path']);
-      const price = first(d,['price','base_price','selling_price']);
-      return '<article class="service">'+(image ? '<img src="'+escapeHtml(image)+'" alt="'+escapeHtml(name)+'" loading="lazy" style="width:100%;height:145px;object-fit:cover;border-radius:13px" onerror="this.style.display=\'none\'">' : '<div class="icon">🍽️</div>')+
-        '<h3>'+escapeHtml(name)+'</h3><p>'+escapeHtml(desc || first(d,['slug']) || 'Dish details will be added soon.')+'</p>'+(price !== '' ? '<div class="price">₹'+escapeHtml(price)+'</div>' : '')+'</article>';
-    }).join('');
-    if (!cuisines.length) status.textContent = 'Cuisine data could not be loaded. Check that the public/anon role has SELECT access to the cuisines table.';
-    else if (!dishes.length) status.textContent = cuisines.length+' cuisines loaded, but no dishes were returned. Check dishes table data and its SELECT policy in Supabase.';
-    else status.textContent = (cuisine ? title(cuisine)+': ' : 'All cuisines: ')+filteredDishes.length+' dishes • '+filteredMenus.length+' menus loaded.';
-    if (!filteredDishes.length && dishes.length) dishArea.innerHTML = '<div class="seoCard" style="grid-column:1/-1"><h3>No dishes found for this filter</h3><p>Try another cuisine or clear the dish search. If the catalogue is still empty, check that each dish is linked to the correct cuisine in Supabase.</p></div>';
-    if (!filteredMenus.length) menuArea.innerHTML = '<div class="seoCard" style="grid-column:1/-1"><h3>No menus linked yet</h3><p>Menus will appear here when menu records are linked to this cuisine and its dishes in Supabase.</p></div>';
+    target.querySelectorAll('[data-cuisine]').forEach(btn=>btn.addEventListener('click',()=>{
+      if($('catalogCuisine')) $('catalogCuisine').value=btn.dataset.cuisine;
+      const c=selectedCuisine(); if(c && $('cuisine')) $('cuisine').value=label(c);
+      renderCatalogue();
+      $('selectedCuisineHeading')?.scrollIntoView({behavior:'smooth',block:'start'});
+    }));
   }
-  async function loadTable(table) {
-    const { data, error } = await client.from(table).select('*').limit(1000);
-    if (error) {
-      console.warn('ChefNearby catalogue: '+table+' could not be read:', error.message);
-      return [];
-    }
-    return Array.isArray(data) ? data : [];
+  function renderCatalogue() {
+    const c=selectedCuisine(), search=($('dishSearch')?.value||'').trim().toLowerCase();
+    const status=$('catalogStatus'), dishTarget=$('catalogDishes'), menuTarget=$('catalogMenus');
+    if(!dishTarget||!menuTarget||!status) return;
+    const matchingMenus=menus.filter(m=>isActive(m) && (!c || String(val(m,['cuisine_id','cuisineId']))===String(c.id) ||
+      [label(c),val(c,['slug'])].some(x=>String(x||'').toLowerCase()===String(val(m,['cuisine_slug','cuisine_name','cuisine'])||'').toLowerCase())));
+    const ds=dishes.filter(d=>isActive(d)&&dishBelongsToCuisine(d,c)&&(!search||[label(d),val(d,['description','short_description','slug'])].join(' ').toLowerCase().includes(search)));
+    const ms=matchingMenus.filter(m=>!search||[label(m),val(m,['description','slug'])].join(' ').toLowerCase().includes(search));
+    if($('selectedCuisineHeading')) $('selectedCuisineHeading').textContent=c ? label(c)+' — dishes & menus' : 'All dishes & menus';
+    menuTarget.innerHTML=ms.map(m=>{
+      const count=menuDishes.filter(md=>String(val(md,['menu_id','menuId']))===String(m.id)).length;
+      return '<article class="service"><div class="icon">📋</div><h3>'+esc(label(m))+'</h3><p>'+esc(val(m,['description','summary'])||count+' linked dishes')+'</p><div class="price">'+count+' menu items</div></article>';
+    }).join('');
+    dishTarget.innerHTML=ds.map(d=>{
+      const img=val(d,['image_url','image','photo_url','image_path']), desc=val(d,['description','short_description','details']), price=val(d,['price','base_price','selling_price']);
+      return '<article class="service">'+(img?'<img src="'+esc(img)+'" alt="'+esc(label(d))+'" loading="lazy" style="width:100%;height:150px;object-fit:cover;border-radius:13px" onerror="this.style.display=\'none\'">':'<div class="icon">🍽️</div>')+'<h3>'+esc(label(d))+'</h3><p>'+esc(desc||val(d,['slug'])||'Dish details coming soon.')+'</p>'+(price!==''?'<div class="price">₹'+esc(price)+'</div>':'')+'</article>';
+    }).join('');
+    if(!cuisines.length) status.textContent='No cuisine rows were readable. Check Supabase SELECT grants/RLS for cuisines.';
+    else if(!dishes.length) status.textContent=cuisines.length+' cuisines loaded, but the dishes table returned no readable rows. Check dishes data and SELECT policies.';
+    else if(c && !ds.length) status.textContent='Cuisine loaded. No dishes are linked to '+label(c)+' yet; check dishes.cuisine_id or menu_dishes → menus cuisine links.';
+    else status.textContent=(c?label(c)+': ':'Catalogue: ')+ds.length+' dishes and '+ms.length+' menus.';
+    if(!ds.length) dishTarget.innerHTML='<div class="seoCard" style="grid-column:1/-1"><h3>No linked dishes found</h3><p>The cuisine card is working, but the database must link dishes to this cuisine. We should verify the live cuisine/dish columns before adding data so we do not corrupt existing records.</p></div>';
+    if(!ms.length) menuTarget.innerHTML='<div class="seoCard" style="grid-column:1/-1"><h3>No menus linked yet</h3><p>Menu records will appear once menus are linked to this cuisine and its dishes.</p></div>';
+  }
+  function renderServices() {
+    const target=$('serviceCards'), status=$('serviceStatus'); if(!target) return;
+    const rows=services.length?services.filter(isActive).map(s=>({name:label(s),group:val(s,['category_group','group','category'])||'Services',slug:val(s,['slug'])})):
+      FALLBACK_SERVICES.map(s=>({name:s[0],group:s[1],icon:s[2]}));
+    const icons={bartender:'🍸',waiter:'🧑‍🍳',babysitter:'🧸',beautician:'💄',butler:'🛎️',cleaner:'🧹',decorator:'🎈','kitchen-helper':'👩‍🍳','party-chef':'🎉','private-chef':'🍽️','private-dining':'🥂','home-cook':'🏠','daily-cook':'🥗'};
+    target.innerHTML=rows.map(s=>{
+      const name=s.name||'Service', icon=s.icon||icons[slugify(name)]||'✨';
+      return '<button type="button" class="service" data-service="'+esc(name)+'" style="text-align:left;width:100%;cursor:pointer;color:var(--ink)"><div class="icon">'+icon+'</div><h3>'+esc(name.replace(/^Nearby\s+/i,''))+'</h3><p>'+esc(s.group||'Home & lifestyle service')+'</p><div class="price">Request this service →</div></button>';
+    }).join('');
+    target.querySelectorAll('[data-service]').forEach(btn=>btn.addEventListener('click',()=>{
+      const service=btn.dataset.service;
+      const sel=$('bservice');
+      if(sel && !Array.from(sel.options).some(o=>o.value===service)){const opt=document.createElement('option');opt.value=service;opt.textContent=service;sel.appendChild(opt);}
+      if(sel) sel.value=service;
+      $('book')?.scrollIntoView({behavior:'smooth'});
+    }));
+    if(status) status.textContent=services.length?'Services loaded from the live database.':'Showing the requested service catalogue while service table permissions/data are verified.';
+  }
+  function renderMarkets() {
+    const cities=$('cityCards'), countries=$('countryCards');
+    if(cities) cities.innerHTML=INDIA_CITIES.map((c,i)=>'<button class="service" type="button" data-city="'+esc(c)+'" style="text-align:left;cursor:pointer;color:var(--ink)"><div class="icon">📍</div><h3>'+esc(c)+'</h3><p>'+(i===0?'Current primary city':'India expansion city')+'</p><div class="price">Request service →</div></button>').join('');
+    cities?.querySelectorAll('[data-city]').forEach(btn=>btn.addEventListener('click',()=>{
+      if($('loc')) $('loc').value=btn.dataset.city;
+      if($('bookingCity')) $('bookingCity').value=btn.dataset.city;
+      $('book')?.scrollIntoView({behavior:'smooth'});
+    }));
+    if(countries) countries.innerHTML=COUNTRIES.map(c=>'<article class="service"><div class="icon">'+c[1]+'</div><h3>'+esc(c[0])+'</h3><p>International expansion market</p><div class="price">Launch planning</div></article>').join('');
   }
   async function init() {
-    const status = $('catalogStatus');
-    if (!window.supabase || !config.supabaseUrl || !config.supabasePublishableKey) {
-      if (status) status.textContent = 'Catalogue connection is not configured. Refresh the page or contact the site admin.';
-      return;
+    const status=$('catalogStatus');
+    if(!window.supabase||!config.supabaseUrl||!config.supabasePublishableKey) {
+      if(status) status.textContent='Supabase catalogue connection is not configured.';
+      renderMarkets(); renderServices(); return;
     }
-    try {
-      client = window.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey);
-      const results = await Promise.all([
-        loadTable('cuisines'), loadTable('dishes'), loadTable('menus'), loadTable('menu_dishes')
-      ]);
-      cuisines = results[0].filter(active).sort((a,b) => title(a).localeCompare(title(b)));
-      dishes = results[1];
-      menus = results[2];
-      menuDishes = results[3];
-      renderCuisineOptions();
-      render();
-      $('catalogCuisine')?.addEventListener('change', () => {
-        const chosen = selectedCuisine();
-        if (chosen && $('cuisine')) $('cuisine').value = title(chosen);
-        render();
-      });
-      $('dishSearch')?.addEventListener('input', render);
-      $('cuisine')?.addEventListener('change', () => {
-        const match = cuisines.find(c => title(c).toLowerCase() === $('cuisine').value.toLowerCase());
-        if (match && $('catalogCuisine')) {
-          $('catalogCuisine').value = String(match.id || match.slug || title(match));
-          render();
-        }
-      });
-    } catch (error) {
-      console.error('ChefNearby catalogue failed:', error);
-      if (status) status.textContent = 'Could not load the catalogue. Check Supabase connection and table permissions.';
-    }
+    client=window.supabase.createClient(config.supabaseUrl,config.supabasePublishableKey);
+    const [c,d,m,md,s,sc]=await Promise.all(['cuisines','dishes','menus','menu_dishes','services','service_categories'].map(read));
+    cuisines=c.rows.filter(isActive).sort((a,b)=>label(a).localeCompare(label(b)));
+    dishes=d.rows; menus=m.rows; menuDishes=md.rows;
+    services=s.rows.filter(isActive); categories=sc.rows.filter(isActive);
+    if(!services.length && categories.length) services=categories;
+    renderCuisineOptions(); renderCuisineCards(); renderCatalogue(); renderServices(); renderMarkets();
+    $('catalogCuisine')?.addEventListener('change',()=>{const c=selectedCuisine();if(c&&$('cuisine'))$('cuisine').value=label(c);renderCatalogue();});
+    $('dishSearch')?.addEventListener('input',renderCatalogue);
+    $('cuisine')?.addEventListener('change',()=>{const c=cuisines.find(x=>label(x).toLowerCase()===$('cuisine').value.toLowerCase());if(c&&$('catalogCuisine')){$('catalogCuisine').value=String(c.id||c.slug||label(c));renderCatalogue();}});
   }
-  document.addEventListener('DOMContentLoaded', init);
+  window.ChefNearbyCatalog={selectCuisine(value){if($('catalogCuisine'))$('catalogCuisine').value=String(value);renderCatalogue();}};
+  document.addEventListener('DOMContentLoaded',init);
 })();
