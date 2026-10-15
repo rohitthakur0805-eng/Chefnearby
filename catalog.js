@@ -66,15 +66,12 @@
     const target=$('cuisineCards'); if(!target) return;
     target.innerHTML=cuisines.map(c=>{
       const count=dishes.filter(d=>isActive(d)&&dishBelongsToCuisine(d,c)).length;
-      const icon=({italian:'🍝',chinese:'🥡',japanese:'🍣',thai:'🍜',mexican:'🌮',continental:'🥘', 'north-indian':'🍛','south-indian':'🥞','pan-asian':'🍱',mediterranean:'🫒'})[slugify(label(c))]||'🍽️';
-      return '<button type="button" class="service cuisine-tile" data-cuisine="'+esc(c.id||c.slug||label(c))+'" style="text-align:left;width:100%;cursor:pointer;color:var(--ink)"><div class="icon">'+icon+'</div><h3>'+esc(label(c))+'</h3><p>'+count+' linked dishes</p><div class="price">Explore cuisine →</div></button>';
+      const slug=String(val(c,['slug'])||slugify(label(c));
+      const id=String(c.id||'');
+      const icon=({'italian':'🍝','chinese':'🥡','japanese':'🍣','thai':'🍜','mexican':'🌮','continental':'🥘','north-indian':'🍛','south-indian':'🥞','pan-asian':'🍱','mediterranean':'🫒'})[slugify(label(c))]||'🍽️';
+      const href='./cuisine.html?slug='+encodeURIComponent(slug)+'&id='+encodeURIComponent(id);
+      return '<a class="service cuisine-tile" href="'+esc(href)+'" style="display:block;color:var(--ink)"><div class="icon">'+icon+'</div><h3>'+esc(label(c))+'</h3><p>'+count+' linked dishes</p><div class="price">Open cuisine & menu →</div></a>';
     }).join('');
-    target.querySelectorAll('[data-cuisine]').forEach(btn=>btn.addEventListener('click',()=>{
-      if($('catalogCuisine')) $('catalogCuisine').value=btn.dataset.cuisine;
-      const c=selectedCuisine(); if(c && $('cuisine')) $('cuisine').value=label(c);
-      renderCatalogue();
-      $('selectedCuisineHeading')?.scrollIntoView({behavior:'smooth',block:'start'});
-    }));
   }
   function renderCatalogue() {
     const c=selectedCuisine(), search=($('dishSearch')?.value||'').trim().toLowerCase();
