@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Explore Cuisine | ChefNearby</title><meta name="description" content="Explore cuisines, dishes and menus on ChefNearby.">
+<style>
+:root{--bg:#fffaf4;--ink:#17130f;--muted:#6e655d;--brand:#e34b25;--cream:#fff1df;--line:#eadfd4}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}a{color:inherit;text-decoration:none}.wrap{max-width:1120px;margin:auto;padding:0 22px}.nav{background:#fffaf4ee;border-bottom:1px solid var(--line);position:sticky;top:0}.navin{height:70px;display:flex;align-items:center;justify-content:space-between}.logo{font-weight:900;font-size:23px}.logo span{color:var(--brand)}.btn{display:inline-block;border:0;border-radius:12px;padding:13px 18px;background:var(--brand);color:white;font-weight:800}.hero{padding:54px 0;background:radial-gradient(circle at 85% 10%,#ffe0bc,transparent 35%),linear-gradient(135deg,#fffaf4,#fff1df)}.eyebrow{font-weight:800;color:var(--brand);font-size:13px;text-transform:uppercase;letter-spacing:.08em}.hero h1{font-size:clamp(38px,6vw,62px);letter-spacing:-2px;margin:12px 0}.hero p{font-size:17px;line-height:1.6;color:var(--muted);max-width:720px}.section{padding:42px 0}.section h2{font-size:30px;letter-spacing:-1px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.card{background:white;border:1px solid var(--line);border-radius:20px;padding:20px}.icon{height:48px;width:48px;border-radius:14px;background:var(--cream);display:grid;place-items:center;font-size:24px}.card h3{margin:14px 0 8px}.card p{color:var(--muted);line-height:1.5;font-size:14px}.price{color:var(--brand);font-weight:900;margin-top:12px}.status{background:white;border:1px solid var(--line);border-radius:16px;padding:18px;color:var(--muted)}.footer{background:#17130f;color:#fff;padding:28px 0;margin-top:25px}.footer p{color:#c9bbb0;font-size:14px}@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:500px){.grid{grid-template-columns:1fr}.hero{padding:35px 0}}
+</style></head><body>
+<nav class="nav"><div class="wrap navin"><a class="logo" href="./index.html">Chef<span>Nearby</span></a><a href="./index.html#menu">All cuisines</a></div></nav>
+<header class="hero"><div class="wrap"><div class="eyebrow">ChefNearby cuisine guide</div><h1 id="title">Loading cuisine…</h1><p id="intro">Loading dishes and menus from our live catalogue.</p><a id="bookLink" class="btn" href="./index.html#book">Request a chef for this cuisine →</a></div></header>
+<main class="wrap"><section class="section"><h2>Menus</h2><div id="menus" class="grid"></div></section><section class="section"><h2>Dishes</h2><div id="dishes" class="grid"></div></section><div id="status" class="status">Connecting to ChefNearby catalogue…</div></main>
+<footer class="footer"><div class="wrap"><b>ChefNearby</b><p>Explore food options and request a chef at home.</p></div></footer>
+<script src="./config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+const $=id=>document.getElementById(id), p=new URLSearchParams(location.search), wantedSlug=(p.get('slug')||'').toLowerCase(), wantedId=p.get('id')||'', cfg=window.CHEFNEARME||{};
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const val=(r,keys)=>{for(const k of keys)if(r&&r[k]!=null&&String(r[k]).trim()!=='')return r[k];return ''};
+const label=r=>String(val(r,['name','dish_name','title','display_name','label','slug'])||'Untitled');
+const active=r=>!(r&&(r.is_active===false||r.active===false||String(r.status||'').toLowerCase()==='inactive'));
+const slug=s=>String(s||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+async function read(db,t){const {data,error}=await db.from(t).select('*').limit(1000);if(error){console.warn(t,error.message);return {rows:[],error:error.message}}return {rows:data||[],error:null}}
+function card(name,desc,icon){return '<article class="card"><div class="icon">'+icon+'</div><h3>'+esc(name)+'</h3><p>'+esc(desc||'Details will be added soon.')+'</p></article>'}
+async function init(){
+ if(!window.supabase||!cfg.supabaseUrl||!cfg.supabasePublishableKey){$('status').textContent='Catalogue connection is not configured.';return}
+ const db=window.supabase.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey);
+ const [cr,dr,mr,mdr]=await Promise.all(['cuisines','dishes','menus','menu_dishes'].map(t=>read(db,t)));
+ const cuisines=cr.rows.filter(active), dishes=dr.rows.filter(active), menus=mr.rows.filter(active), links=mdr.rows;
+ const cuisine=cuisines.find(c=>String(c.id||'')===wantedId)||cuisines.find(c=>slug(val(c,['slug'])||label(c))===wantedSlug)||cuisines.find(c=>slug(label(c))===wantedSlug);
+ if(!cuisine){$('title').textContent='Cuisine not found';$('intro').textContent='This cuisine could not be matched to a live database record.';$('status').textContent='Check the cuisine slug and the Supabase cuisines table.';return}
+ $('title').textContent=label(cuisine);document.title=label(cuisine)+' Dishes & Menus | ChefNearby';
+ $('intro').textContent='Explore '+label(cuisine)+' dishes and available menus. Select a menu or request a chef for your occasion.';
+ $('bookLink').href='./index.html?cuisine='+encodeURIComponent(val(cuisine,['slug'])||slug(label(cuisine)))+'#book';
+ function matchesMenu(m){const id=val(m,['cuisine_id','cuisineId']), name=val(m,['cuisine_slug','cuisine_name','cuisine']);return (id!==''&&String(id)===String(cuisine.id))||(name!==''&&[label(cuisine),val(cuisine,['slug'])].some(x=>String(x||'').toLowerCase()===String(name).toLowerCase()))}
+ const cuisineMenus=menus.filter(matchesMenu), menuIds=new Set(cuisineMenus.map(m=>String(m.id)));
+ const linkedDishIds=new Set(links.filter(x=>menuIds.has(String(val(x,['menu_id','menuId'])))).map(x=>String(val(x,['dish_id','dishId']))));
+ const cuisineDishes=dishes.filter(d=>{
+   const id=val(d,['cuisine_id','cuisineId','cuisine_uuid']);
+   if(id!=='')return String(id)===String(cuisine.id);
+   const name=val(d,['cuisine_slug','cuisine_name','cuisine']);
+   if(name!=='')return [label(cuisine),val(cuisine,['slug'])].some(x=>String(x||'').toLowerCase()===String(name).toLowerCase());
+   return linkedDishIds.has(String(d.id));
+ });
+ $('menus').innerHTML=cuisineMenus.length?cuisineMenus.map(m=>card(label(m),val(m,['description','summary'])||links.filter(x=>String(val(x,['menu_id','menuId']))===String(m.id)).length+' menu items','📋')).join(''):'<div class="status">No menus have been linked to this cuisine yet.</div>';
+ $('dishes').innerHTML=cuisineDishes.length?cuisineDishes.map(d=>{const img=val(d,['image_url','image','photo_url']);return '<article class="card">'+(img?'<img src="'+esc(img)+'" alt="'+esc(label(d))+'" loading="lazy" style="width:100%;height:160px;object-fit:cover;border-radius:13px" onerror="this.style.display=\'none\'">':'<div class="icon">🍽️</div>')+'<h3>'+esc(label(d))+'</h3><p>'+esc(val(d,['description','short_description','details'])||val(d,['slug'])||'Dish details coming soon.')+'</p></article>'}).join(''):'<div class="status">No dishes are linked to this cuisine yet. The page is working; we need to verify the live dish-to-cuisine mapping before safely adding or linking menu data.</div>';
+ $('status').textContent='Live catalogue loaded: '+cuisineMenus.length+' menus and '+cuisineDishes.length+' linked dishes.';
+}
+document.addEventListener('DOMContentLoaded',init);
+})();
+</script></body></html>
