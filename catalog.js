@@ -66,7 +66,7 @@
     const target=$('cuisineCards'); if(!target) return;
     target.innerHTML=cuisines.map(c=>{
       const count=dishes.filter(d=>isActive(d)&&dishBelongsToCuisine(d,c)).length;
-      const slug=String(val(c,['slug'])||slugify(label(c));
+      const slug=String(val(c,['slug'])||slugify(label(c)));
       const id=String(c.id||'');
       const icon=({'italian':'🍝','chinese':'🥡','japanese':'🍣','thai':'🍜','mexican':'🌮','continental':'🥘','north-indian':'🍛','south-indian':'🥞','pan-asian':'🍱','mediterranean':'🫒'})[slugify(label(c))]||'🍽️';
       const href='./cuisine.html?slug='+encodeURIComponent(slug)+'&id='+encodeURIComponent(id);
