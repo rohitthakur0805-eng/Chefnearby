@@ -39,6 +39,7 @@
       const name = value('name');
       const phone = value('phone').replace(/[\s()-]/g, '');
       const area = value('area');
+      const city = value('bookingCity') || value('loc') || 'Bengaluru';
       const service = value('bservice') || 'Party Chef';
       const cuisine = value('cuisine');
       const budget = value('budget');
@@ -61,6 +62,7 @@
 
       const customerNotes = [
         'Website enquiry via ChefNearby',
+        'Requested city: ' + city,
         'Requested service: ' + service,
         'Cuisine: ' + (cuisine || 'Not specified'),
         'Budget: ' + (budget || 'Need a quote'),
@@ -74,7 +76,7 @@
         p_booking_date: date,
         p_start_time: time.length === 5 ? time + ':00' : time,
         p_customer_email: email,
-        p_city: 'Bengaluru',
+        p_city: city,
         p_locality: area,
         p_service_category_id: null,
         p_guest_count: guests,
@@ -101,7 +103,7 @@
       }
 
       const message = 'Hi ChefNearby, I submitted a booking request. Booking ID: ' + data.booking_id +
-        '. Name: ' + name + '. Service: ' + service + '. Area: ' + area + '. Date: ' + date +
+        '. Name: ' + name + '. Service: ' + service + '. City: ' + city + '. Area: ' + area + '. Date: ' + date +
         '. Time: ' + time + '. Guests: ' + guests + '. Cuisine: ' + (cuisine || 'Not specified') +
         '. Budget: ' + (budget || 'Need a quote') + '. Phone: ' + phone;
       const wa = String(config.whatsapp || '').replace(/\D/g, '');
